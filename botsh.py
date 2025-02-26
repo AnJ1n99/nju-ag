@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-from prompt_toolkit import PromptSession  # 新增输入处理库
+import subprocess  # 新增subprocess模块
+from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
 from openai import OpenAI
 
@@ -9,6 +10,34 @@ from openai import OpenAI
 MODEL_ID = ""
 ARK_API_KEY = ""
 ARK_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
+
+def execute_command(command: str) -> str:
+    """执行shell命令并实时流式输出结果"""
+    try:
+        proc = subprocess.Popen(
+            command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+        output = []
+        while True:
+            line = proc.stdout.readline()
+            if not line and proc.poll() is not None:
+                break
+            if line:
+                # 直接输出并立即刷新
+                sys.stdout.write(line)
+                sys.stdout.flush()
+                output.append(line)
+        return ''.join(output)
+    except Exception as e:
+        error_msg = f"\nError executing command: {str(e)}"
+        sys.stdout.write(error_msg + "\n")
+        return error_msg
 
 def query_llm(client, messages) -> str:
     """执行LLM查询（流式输出）"""
@@ -22,7 +51,8 @@ def query_llm(client, messages) -> str:
         for chunk in stream:
             if chunk.choices and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
-                print(content, end="", flush=True)
+                sys.stdout.write(content)
+                sys.stdout.flush()  # 确保实时刷新
                 response.append(content)
         print()
         return ''.join(response)
@@ -56,7 +86,7 @@ def interactive_mode(client, initial_input=None):
     messages = [
         {"role": "system", "content": "你是一个能干的助手。"}
     ]
-    
+
     if initial_input:
         messages.append({"role": "user", "content": initial_input})
         print("Q\n>", initial_input)
@@ -64,28 +94,46 @@ def interactive_mode(client, initial_input=None):
         assistant_response = query_llm(client, messages)
         if assistant_response:
             messages.append({"role": "assistant", "content": assistant_response})
-    
+
     print("\n进入对话模式（输入 exit 退出）")
     while True:
         try:
-            # 使用增强输入函数
             user_input = enhanced_input("\nQ\n> ")
-            
+        
             if user_input.lower() in ['exit', 'quit']:
                 break
-                
+            
             if not user_input:
                 continue
+
+            # 处理以!开头的命令
+            if user_input.startswith('!'):
+                command = user_input[1:].strip()
+                if not command:
+                    continue
                 
+                # 将命令加入消息历史
+                messages.append({"role": "user", "content": user_input})
+                
+                # 执行命令并获取输出
+                print("A\n> ", end='', flush=True)
+                cmd_output = execute_command(command)
+                print()  # 确保命令输出后换行
+                
+                # 将命令输出加入消息历史
+                messages.append({"role": "system", "content": f"命令执行结果:\n{cmd_output}"})
+                continue
+                
+            # 正常LLM对话流程
             messages.append({"role": "user", "content": user_input})
             print("A\n> ", end="", flush=True)
             assistant_response = query_llm(client, messages)
-            
+        
             if assistant_response:
                 messages.append({"role": "assistant", "content": assistant_response})
             else:
                 sys.stderr.write("获取响应失败，请重试\n")
-                
+            
         except KeyboardInterrupt:
             print("\n会话已终止")
             break
