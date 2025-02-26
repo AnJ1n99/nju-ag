@@ -89,8 +89,8 @@ def interactive_mode(client, initial_input=None):
 
     if initial_input:
         messages.append({"role": "user", "content": initial_input})
-        print("Q\n>", initial_input)
-        print("A\n> ", end="", flush=True)
+        print("Q: ", initial_input)
+        print("A: ", end="", flush=True)
         assistant_response = query_llm(client, messages)
         if assistant_response:
             messages.append({"role": "assistant", "content": assistant_response})
@@ -98,12 +98,23 @@ def interactive_mode(client, initial_input=None):
     print("\n进入对话模式（输入 exit 退出）")
     while True:
         try:
-            user_input = enhanced_input("\nQ\n> ")
+            user_input = enhanced_input("Q: ")
         
             if user_input.lower() in ['exit', 'quit']:
                 break
+                
+            # 新增 clear 命令处理
+            if user_input.strip().lower() == 'clear':
+                # 清屏操作
+                sys.stdout.write('\033[2J\033[H')  # ANSI 清屏序列
+                sys.stdout.flush()
+                # 重置对话历史
+                messages = [{"role": "system", "content": "你是一个能干的助手。"}]
+                print("对话历史已重置")
+                continue
             
             if not user_input:
+                print()
                 continue
 
             # 处理以!开头的命令
@@ -116,7 +127,7 @@ def interactive_mode(client, initial_input=None):
                 messages.append({"role": "user", "content": user_input})
                 
                 # 执行命令并获取输出
-                print("A\n> ", end='', flush=True)
+                print("A: ", end='', flush=True)
                 cmd_output = execute_command(command)
                 print()  # 确保命令输出后换行
                 
@@ -126,14 +137,15 @@ def interactive_mode(client, initial_input=None):
                 
             # 正常LLM对话流程
             messages.append({"role": "user", "content": user_input})
-            print("A\n> ", end="", flush=True)
+            print("A: ", end="", flush=True)
             assistant_response = query_llm(client, messages)
-        
+
             if assistant_response:
                 messages.append({"role": "assistant", "content": assistant_response})
             else:
                 sys.stderr.write("获取响应失败，请重试\n")
-            
+            print()
+
         except KeyboardInterrupt:
             print("\n会话已终止")
             break
