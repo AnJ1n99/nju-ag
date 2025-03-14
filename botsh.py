@@ -158,7 +158,9 @@ def single_query_mode(client, question):
         {"role": "system", "content": "你是一个能干的助手。"},
         {"role": "user", "content": question},
     ]
-    print("> ", end="", flush=True)
+    sys.stdout.write("> ")
+    sys.stdout.flush()  # 确保实时刷新
+
     assistant_response = query_llm(client, messages)
     if not assistant_response:
         sys.exit(1)
@@ -178,26 +180,26 @@ def main():
     parser.add_argument("text", nargs="*", help="输入问题（直接模式）")
     parser.add_argument("-r", "--repl", action="store_true", help="进入交互模式")
     parser.add_argument("-t", "--translate", action="store_true", help="翻译")
-    parser.add_argument("-p", "--print-text", action="store_true", help="打印完整的文本")
+    parser.add_argument(
+        "-p", "--print-text", action="store_true", help="打印完整的输入文本"
+    )
     args = parser.parse_args()
-        
+
     in_text = None
     in_text_list = []
     piped_input = read_piped_input()
 
-    if args.translate:
-        if piped_input:
-            in_text_list.append(piped_input.strip())
-        if args.text:
-            in_text_list.append(''.join(args.text))
-        if in_text_list:
-            in_text_list.append("\n请将以上文本翻译成中文")
-    
-    if in_text_list:
-        in_text = ''.join(in_text_list)
+    if piped_input:
+        in_text_list.append(piped_input.strip())
+    if args.text:
+        in_text_list.append("".join(args.text))
+    if args.translate and in_text_list:
+        in_text_list.append("\n请将以上文本翻译成中文\n")
 
+    if in_text_list:
+        in_text = "".join(in_text_list)
     if args.print_text and in_text:
-        print(in_text)
+        sys.stdout.write(in_text)
 
     if in_text:
         if args.repl:
@@ -206,6 +208,7 @@ def main():
             single_query_mode(client, in_text)
     else:
         interactive_mode(client)
+
 
 if __name__ == "__main__":
     main()
