@@ -11,6 +11,7 @@ MODEL_ID = ""
 ARK_API_KEY = ""
 ARK_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
 
+
 def execute_command(command: str) -> str:
     """执行shell命令并实时流式输出结果"""
     try:
@@ -21,7 +22,7 @@ def execute_command(command: str) -> str:
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
-            universal_newlines=True
+            universal_newlines=True,
         )
         output = []
         while True:
@@ -33,19 +34,18 @@ def execute_command(command: str) -> str:
                 sys.stdout.write(line)
                 sys.stdout.flush()
                 output.append(line)
-        return ''.join(output)
+        return "".join(output)
     except Exception as e:
         error_msg = f"\nError executing command: {str(e)}"
         sys.stdout.write(error_msg + "\n")
         return error_msg
 
+
 def query_llm(client, messages) -> str:
     """执行LLM查询（流式输出）"""
     try:
         stream = client.chat.completions.create(
-            model=MODEL_ID,
-            messages=messages,
-            stream=True
+            model=MODEL_ID, messages=messages, stream=True
         )
         response = []
         for chunk in stream:
@@ -55,37 +55,32 @@ def query_llm(client, messages) -> str:
                 sys.stdout.flush()  # 确保实时刷新
                 response.append(content)
         print()
-        return ''.join(response)
+        return "".join(response)
     except Exception as e:
         sys.stderr.write(f"\nError: {str(e)}\n")
         return None
 
+
 def enhanced_input(prompt: str) -> str:
     """增强的输入函数（支持中文编辑/方向键）"""
     bindings = KeyBindings()
-    
-    @bindings.add('c-c')  # 保留Ctrl+C中断支持
+
+    @bindings.add("c-c")  # 保留Ctrl+C中断支持
     def _(event):
         event.app.exit(exception=KeyboardInterrupt)
-    
+
     session = PromptSession(
-        key_bindings=bindings,
-        vi_mode=False,
-        multiline=False,
-        mouse_support=False
+        key_bindings=bindings, vi_mode=False, multiline=False, mouse_support=False
     )
-    
+
     return session.prompt(
-        message=prompt,
-        wrap_lines=True,
-        enable_history_search=False
+        message=prompt, wrap_lines=True, enable_history_search=False
     ).strip()
+
 
 def interactive_mode(client, initial_input=None):
     """交互式对话模式"""
-    messages = [
-        {"role": "system", "content": "你是一个能干的助手。"}
-    ]
+    messages = [{"role": "system", "content": "你是一个能干的助手。"}]
 
     if initial_input:
         messages.append({"role": "user", "content": initial_input})
@@ -95,46 +90,49 @@ def interactive_mode(client, initial_input=None):
         if assistant_response:
             messages.append({"role": "assistant", "content": assistant_response})
 
-    print("\n进入对话模式（输入 exit 退出）")
+    print("进入对话模式（输入 exit 退出）")
     while True:
         try:
             user_input = enhanced_input("Q: ")
-        
-            if user_input.lower() in ['exit', 'quit']:
+
+            if user_input.lower() in ["exit", "quit"]:
                 break
-                
+
             # 新增 clear 命令处理
-            if user_input.strip().lower() == 'clear':
+            if user_input.strip().lower() == "clear":
                 # 清屏操作
-                sys.stdout.write('\033[2J\033[H')  # ANSI 清屏序列
+                sys.stdout.write("\033[2J\033[H")  # ANSI 清屏序列
                 sys.stdout.flush()
                 # 重置对话历史
                 messages = [{"role": "system", "content": "你是一个能干的助手。"}]
                 print("对话历史已重置")
                 continue
-            
+
             if not user_input:
                 print()
                 continue
 
             # 处理以!开头的命令
-            if user_input.startswith('!'):
+            if user_input.startswith("!"):
                 command = user_input[1:].strip()
                 if not command:
                     continue
-                
+
                 # 将命令加入消息历史
                 messages.append({"role": "user", "content": user_input})
-                
+
                 # 执行命令并获取输出
-                print("A: ", end='', flush=True)
+                print("A: ", end="", flush=True)
                 cmd_output = execute_command(command)
                 print()  # 确保命令输出后换行
-                
+
                 # 将命令输出加入消息历史
-                messages.append({"role": "system", "content": f"命令执行结果:\n{cmd_output}"})
+                messages.append({
+                    "role": "system",
+                    "content": f"命令执行结果:\n{cmd_output}",
+                })
                 continue
-                
+
             # 正常LLM对话流程
             messages.append({"role": "user", "content": user_input})
             print("A: ", end="", flush=True)
@@ -147,51 +145,67 @@ def interactive_mode(client, initial_input=None):
             print()
 
         except KeyboardInterrupt:
-            print("\n会话已终止")
-            break
-        except EOFError:
             print("\n再见！")
             break
+        except EOFError:
+            print("\n[ERROR]再见！")
+            break
+
 
 def single_query_mode(client, question):
     """单次查询模式（保持原有简单输入）"""
     messages = [
         {"role": "system", "content": "你是一个能干的助手。"},
-        {"role": "user", "content": question}
+        {"role": "user", "content": question},
     ]
     print("> ", end="", flush=True)
     assistant_response = query_llm(client, messages)
     if not assistant_response:
         sys.exit(1)
 
+
 def read_piped_input():
     """读取管道输入并添加换行符"""
     if not sys.stdin.isatty():
-        return sys.stdin.read().strip() + '\n'
+        return sys.stdin.read().strip() + "\n"
     return None
+
 
 def main():
     client = OpenAI(api_key=ARK_API_KEY, base_url=ARK_BASE_URL)
-    
-    parser = argparse.ArgumentParser(description='AI命令行助手')
-    parser.add_argument('text', nargs='*', help='输入问题（直接模式）')
-    parser.add_argument('-r', '--repl', action='store_true', help='进入交互模式')
-    args = parser.parse_args()
 
+    parser = argparse.ArgumentParser(description="AI命令行助手")
+    parser.add_argument("text", nargs="*", help="输入问题（直接模式）")
+    parser.add_argument("-r", "--repl", action="store_true", help="进入交互模式")
+    parser.add_argument("-t", "--translate", action="store_true", help="翻译")
+    parser.add_argument("-p", "--print-text", action="store_true", help="打印完整的文本")
+    args = parser.parse_args()
+        
+    in_text = None
+    in_text_list = []
     piped_input = read_piped_input()
+
+    if args.translate:
+        if piped_input:
+            in_text_list.append(piped_input.strip())
+        if args.text:
+            in_text_list.append(''.join(args.text))
+        if in_text_list:
+            in_text_list.append("\n请将以上文本翻译成中文")
     
-    if piped_input:
+    if in_text_list:
+        in_text = ''.join(in_text_list)
+
+    if args.print_text and in_text:
+        print(in_text)
+
+    if in_text:
         if args.repl:
-            interactive_mode(client, piped_input.strip())
+            interactive_mode(client, in_text)
         else:
-            single_query_mode(client, piped_input.strip())
-    elif args.text:
-        single_query_mode(client, ' '.join(args.text))
-    elif args.repl:
-        interactive_mode(client)
+            single_query_mode(client, in_text)
     else:
         interactive_mode(client)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
