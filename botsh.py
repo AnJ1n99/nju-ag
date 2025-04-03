@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import sys
 import argparse
 import subprocess  # 新增subprocess模块
@@ -11,6 +12,10 @@ MODEL_ID = ""
 ARK_API_KEY = ""
 ARK_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
 
+PROMPT_SETTINGS = {
+    "role": "system",
+    "content": "你是一个能干的助手。" # 此处修改提示词
+    }
 
 def execute_command(command: str) -> str:
     """执行shell命令并实时流式输出结果"""
@@ -80,7 +85,7 @@ def enhanced_input(prompt: str) -> str:
 
 def interactive_mode(client, initial_input=None):
     """交互式对话模式"""
-    messages = [{"role": "system", "content": "你是一个能干的助手。"}]
+    messages = [PROMPT_SETTINGS]
 
     if initial_input:
         messages.append({"role": "user", "content": initial_input})
@@ -104,7 +109,7 @@ def interactive_mode(client, initial_input=None):
                 sys.stdout.write("\033[2J\033[H")  # ANSI 清屏序列
                 sys.stdout.flush()
                 # 重置对话历史
-                messages = [{"role": "system", "content": "你是一个能干的助手。"}]
+                messages = [PROMPT_SETTINGS]
                 print("对话历史已重置")
                 continue
 
@@ -155,7 +160,7 @@ def interactive_mode(client, initial_input=None):
 def single_query_mode(client, question):
     """单次查询模式（保持原有简单输入）"""
     messages = [
-        {"role": "system", "content": "你是一个能干的助手。"},
+        PROMPT_SETTINGS,
         {"role": "user", "content": question},
     ]
     sys.stdout.write("> ")
@@ -181,7 +186,10 @@ def main():
     parser.add_argument("-r", "--repl", action="store_true", help="进入交互模式")
     parser.add_argument("-t", "--translate", action="store_true", help="翻译")
     parser.add_argument(
-        "-p", "--print-text", action="store_true", help="打印完整的输入文本"
+        "-P", "--print-text", action="store_true", help="打印完整的输入文本"
+    )
+    parser.add_argument(
+        "-p", "--prompt", type=str, help="输入提示词"
     )
     args = parser.parse_args()
 
@@ -200,6 +208,9 @@ def main():
         in_text = "".join(in_text_list)
     if args.print_text and in_text:
         sys.stdout.write(in_text)
+
+    if args.prompt:
+        PROMPT_SETTINGS["content"] = args.prompt
 
     if in_text:
         if args.repl:
