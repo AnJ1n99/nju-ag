@@ -1,10 +1,10 @@
 # botsh
 
-一个命令行智能助手，支持自然语言交互与Shell命令执行，提供流式输出和交互式对话体验。(项目仍不完善，25年4月份会持续更新)
+一个命令行智能助手，支持自然语言交互与Shell命令执行，提供流式输出和交互式对话体验。(项目仍不完善,会根据实际使用情况完善功能)
 
 ## 功能
 
-![image-20250403170408109](./image/used.png)
+
 
 ✅ **Shell命令执行**（以`!`开头的命令）
 
@@ -22,6 +22,7 @@
 
 ### 环境要求
 ```bash
+pip install -e .
 pip install -r requirements.txt
 ```
 
@@ -38,16 +39,16 @@ ARK_BASE_URL = "your-service-url"
 
 ```bash
 # 交互模式
-./botsh.py
+ag
 
 # 单次查询
-./botsh.py "如何查看磁盘使用情况？"
+ag "如何查看磁盘使用情况？"
 
 # 翻译模式
-./botsh.py -t "Hello World"
+ag -t "Hello World"
 
 # 首段对话后进入交互模式
-./botsh.py -rt "Hello World"
+ag -rt "Hello World"
 ```
 
 ## 交互模式功能
@@ -73,10 +74,10 @@ ARK_BASE_URL = "your-service-url"
 4. **管道：**
 ```bash
 # 翻译gcc --help输出
-gcc --help | ./botsh --translate
+gcc --help | ag --translate
 
 # 解释说明
-gcc --help | ./botsh.py "gcc应该如何使用"
+gcc --help | ag "gcc应该如何使用"
 ```
 
 ## 致谢
