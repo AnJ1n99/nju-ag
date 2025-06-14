@@ -8,9 +8,9 @@ from prompt_toolkit.key_binding import KeyBindings
 from openai import OpenAI
 
 # 配置信息
-MODEL_ID = "deepseek-chat"
-ARK_API_KEY = "sk-ebb070d3569a4926affc714a1a110e23"
-ARK_BASE_URL = "https://api.deepseek.com"
+MODEL_ID = " "
+ARK_API_KEY = " "
+ARK_BASE_URL = " "
 
 PROMPT_SETTINGS = {
     "role": "system",
