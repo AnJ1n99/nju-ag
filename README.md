@@ -73,7 +73,7 @@ ARK_BASE_URL = "your-service-url"
 4. **管道：**
 ```bash
 # 翻译gcc --help输出
-gcc --help | ./botsh.py --translate
+gcc --help | ./botsh --translate
 
 # 解释说明
 gcc --help | ./botsh.py "gcc应该如何使用"

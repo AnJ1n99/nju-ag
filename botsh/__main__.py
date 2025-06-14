@@ -8,13 +8,13 @@ from prompt_toolkit.key_binding import KeyBindings
 from openai import OpenAI
 
 # 配置信息
-MODEL_ID = ""
-ARK_API_KEY = ""
-ARK_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
+MODEL_ID = "deepseek-chat"
+ARK_API_KEY = "sk-ebb070d3569a4926affc714a1a110e23"
+ARK_BASE_URL = "https://api.deepseek.com"
 
 PROMPT_SETTINGS = {
     "role": "system",
-    "content": "你是一个能干的助手。" # 此处修改提示词
+    "content": "You are a capable assistant，please response me in Chinese。" # 此处修改提示词
     }
 
 def execute_command(command: str) -> str:
@@ -95,7 +95,7 @@ def interactive_mode(client, initial_input=None):
         if assistant_response:
             messages.append({"role": "assistant", "content": assistant_response})
 
-    print("进入对话模式（输入 exit 退出）")
+    print("🤖:AGNET 启动！ 输入 'exit' 或'Ctrl + c' 退出")
     while True:
         try:
             user_input = enhanced_input("Q: ")
@@ -179,6 +179,7 @@ def read_piped_input():
 
 
 def main():
+
     client = OpenAI(api_key=ARK_API_KEY, base_url=ARK_BASE_URL)
 
     parser = argparse.ArgumentParser(description="AI命令行助手")
@@ -220,6 +221,10 @@ def main():
     else:
         interactive_mode(client)
 
-
 if __name__ == "__main__":
-    main()
+        main()
+
+
+
+
+
